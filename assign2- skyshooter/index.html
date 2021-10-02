@@ -1,0 +1,659 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Game!!!</title>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/104/three.js"></script> -->
+    <!-- <script type="text/javascript" src="lib/three.js"></script> -->
+    <script src="three.js"></script>
+    <script type="text/javascript" src="lib/ShadowMapViewer.js"></script>
+    <script type="text/javascript" src="lib/HDRCubeTextureLoader.js"></script>
+    <script type="text/javascript" src="lib/dat.gui.min.js"></script>
+    <script type="text/javascript" src="lib/DragControls.js"></script>
+    <script type="text/javascript" src="lib/TrackballControls.js"></script>
+    <script type="text/javascript" src="lib/OBJLoader.js"></script>
+    <script type="text/javascript" src="lib/LegacyJSONLoader.js"></script>
+    <script type="text/javascript" src="lib/Tween.js"></script>
+    <script src="lib/FirstPersonControls.js"></script>
+    <script src="lib/Detector.js"></script>
+    <script src="js/THREEx.KeyboardState.js"></script>
+
+    <script src="lib/DDSLoader.js"></script>
+    <script src="lib/MTLLoader.js"></script>
+    <script src="lib/OBJLoader.js"></script>
+
+    <script src="js/jquery-1.9.1.js"></script>
+    <script src="js/jquery-ui.js"></script>
+    <link rel=stylesheet href="css/jquery-ui.css" />
+    <link rel=stylesheet href="css/info.css"/>
+    <script src="js/info.js"></script>
+
+    <style>
+
+        body {
+            /* set margin to 0 and overflow to hidden, to go fullScreen */
+            margin: 0;
+            overflow: hidden;
+        }
+        .score-container {
+            /*background-color: red;*/
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            transition: transform 0.5s 4s;
+        }
+
+        .score-container #score {
+            color: white;
+            font-size: 8vh;
+            font-family: 'Exo', sans-serif;
+            font-weight: 700;
+        }
+
+        .points-container {
+           position: absolute;
+            top: 80px;
+            right: 10px;
+            transition: transform 0.5s 4s;
+
+        }
+
+        .points-container #points {
+            color: white;
+            font-size: 8vh;
+            font-family: 'Exo', sans-serif;
+            font-weight: 700;
+        }
+
+
+
+    </style>
+</head>
+<body>
+     <div class="score-container">
+    <div id="score"></div>
+     </div>
+     <div class="points-container">
+      <div id="points"></div>
+    </div>
+
+
+    <!-- Div which will hold the Output -->
+    <div id="WebGL-output">
+    </div>
+    <script type="module" src="./GLTFLoader.js"></script>
+    <script type="module">
+      import {GLTFLoader} from "./GLTFLoader.js";
+      
+    let camera, scene, renderer, cube,plane;
+    var keyboard = new THREEx.KeyboardState();
+    var loader,delta;
+    var bullets=[];
+    var scoreText = document.getElementById("score");
+    var score=0;
+    var point=0;
+    var pointsText=document.getElementById("points");
+    var cubes=[];
+    var id = 0;
+  var crashId = " ";
+  var lastCrashId = " ";
+  var collideMeshList = [];
+  var crash = false;
+  var star_arr=[];
+  var enem_miss=[];
+  var enem_dir = [1,-1,-1];
+  let opp1,opp2,opp3;
+  var enemy_missile_timer = 0, max_enemy_shoot_time = 30;
+
+
+    init();
+    animate();
+
+    function init() {
+
+        
+
+
+       scene = new THREE.Scene();
+    scene.background=new THREE.Color(0x00ff00);
+
+    // Init camera (PerspectiveCamera)
+    camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+    );
+
+    // Init renderer
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+
+    // Set size (whole window)
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Render to canvas element
+    document.body.appendChild(renderer.domElement);
+
+    // Init BoxGeometry object (rectangular cuboid)
+    const geometry = new THREE.BoxGeometry(3, 3, 3);
+
+    // Create material with color
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+         
+
+
+
+  
+   
+    
+
+    //   loader=new GLTFLoader();
+    // loader.load("scene.gltf",function(gltf){
+    //   cube=gltf.scene;
+    //   cube.position.set(0,-5,0);
+    //   for(var i=0;i<10;i++)
+    //        {makeStars();}
+
+    //   scene.add(cube);
+    //  });
+
+     const loader2 = new THREE.OBJLoader();
+      loader2.load(
+  // resource URL
+  './plane.obj',
+  // called when resource is loaded
+  function ( object ) {
+    cube=object;
+    cube.position.set(0,-5,0);
+    
+    cube.rotation.x-=1.5;
+      for(var i=0;i<10;i++)
+           {makeStars();}
+    scene.add( object );
+
+  },
+
+  // called when loading is in progresses
+  function ( xhr ) {
+
+    console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+
+  },
+  // called when loading has errors
+  function ( error ) {
+
+    console.log( 'An error happened' );
+
+  }
+);
+
+
+     const loader3 = new THREE.OBJLoader();
+      loader3.load(
+  // resource URL
+  './enemy.obj',
+  // called when resource is loaded
+  function ( object ) {
+    opp1=object;
+    opp1.position.set(10,3,0);
+    
+    opp1.rotation.x-=1.5;
+      
+    scene.add( object );
+    opp1.scale.set(2,2,2);
+
+  },
+
+  // called when loading is in progresses
+  function ( xhr ) {
+
+    console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+
+  },
+  // called when loading has errors
+  function ( error ) {
+
+    console.log( 'An error happened' );
+
+  }
+);
+
+     const loader4 = new THREE.OBJLoader();
+      loader4.load(
+  // resource URL
+  './enemy.obj',
+  // called when resource is loaded
+  function ( object ) {
+    opp2=object;
+    opp2.position.set(-10,10,0);
+    
+    opp2.rotation.x-=1.5;
+      
+    scene.add( object );
+    opp2.scale.set(2,2,2);
+
+  },
+
+  // called when loading is in progresses
+  function ( xhr ) {
+
+    console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+
+  },
+  // called when loading has errors
+  function ( error ) {
+
+    console.log( 'An error happened' );
+
+  }
+);
+
+     const loader5 = new THREE.OBJLoader();
+      loader5.load(
+  // resource URL
+  './enemy.obj',
+  // called when resource is loaded
+  function ( object ) {
+    opp3=object;
+    opp3.position.set(2,50,0);
+    
+    opp3.rotation.x-=1.5;
+      
+    scene.add( object );
+    opp3.scale.set(2,2,2);
+
+  },
+
+  // called when loading is in progresses
+  function ( xhr ) {
+
+    console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+
+  },
+  // called when loading has errors
+  function ( error ) {
+
+    console.log( 'An error happened' );
+
+  }
+);
+
+
+    //        var a = 1;
+    // var b = 1;
+    //  var  c = 1;
+    // var geometry2 = new THREE.BoxGeometry(a, b, c);
+    // var material2 = new THREE.MeshBasicMaterial({
+    //     color: Math.random() * 0xffffff
+    // });
+
+
+    //  opp1 = new THREE.Mesh(geometry2, material2);
+    //  opp1.position.x = getRandomArbitrary(-15, 15);
+    // opp1.position.y = getRandomArbitrary(5,50);
+    // opp1.position.z =0;
+    // scene.add(opp1);
+    // opp2 = new THREE.Mesh(geometry2, material2);
+    // opp2.position.x = getRandomArbitrary(-15, 15);
+    // opp2.position.y = getRandomArbitrary(5,50);
+    // opp2.position.z = 0;
+    // scene.add(opp2);
+    // opp3 = new THREE.Mesh(geometry2, material2);
+    // opp3.position.x = getRandomArbitrary(-15, 15);
+    // opp3.position.y = getRandomArbitrary(5,50);
+    // opp3.position.z = 0;
+    // scene.add(opp3);
+        // var cubeGeometry = new THREE.BoxGeometry(10, 10, 10, 5, 5, 5);
+    // var wireMaterial = new THREE.MeshBasicMaterial({
+    //     color: 0x0000ff,
+    //     wireframe: true
+    // });
+
+
+    // cube = new THREE.Mesh(cubeGeometry, wireMaterial);
+    // //            movingCube = new THREE.Mesh(cubeGeometry, material);
+    // //            movingCube = new THREE.BoxHelper(movingCube);
+    // cube.position.set(0, 0, 0);
+    // scene.add(cube);
+     var abint=new THREE.HemisphereLight(0xffffff,0x000000,2);
+     scene.add(abint);
+     
+
+    // Position camera
+    camera.position.z = 10;
+    }
+
+    function onDocumentMouseMove(event) {
+        event.preventDefault();
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+
+        // var t = (Date.now() / 1000);
+        // render the scene
+        
+        // cube.rotation.x += 0.01;
+        // cube.rotation.y += 0.01;
+        requestAnimationFrame(animate);
+
+        
+        camera.position.z=10
+        //planeFight.position.x-=3;
+        //MovingCube.position.x-=3;
+        render();
+
+        update();
+    }
+
+    function render() {
+
+        //controls.update();
+        camera.updateMatrixWorld();
+        renderer.render( scene, camera );
+    }
+
+   
+
+   function update()
+   {
+        var enem_speed=0.3;
+
+        if(enem_dir[0]==1)
+          {
+            console.log("ff");
+            opp1.position.x+=enem_speed;
+            if (opp1.position.x+enem_speed >=20) 
+              {enem_dir[0]*=-1;}
+          }
+          else
+          {
+            opp1.position.x-=enem_speed;
+            if (opp1.position.x-enem_speed <= -20) 
+              {enem_dir[0]*=-1;}
+
+
+
+
+          }
+
+          if(enem_dir[1]==1)
+          {
+            console.log("ff");
+            opp2.position.x+=enem_speed;
+            if (opp2.position.x+enem_speed >= 20) 
+              {enem_dir[1]*=-1;}
+          }
+          else
+          {
+            opp2.position.x-=enem_speed;
+            if (opp2.position.x-enem_speed <= -20) 
+              {enem_dir[1]*=-1;}
+
+
+
+
+          }
+          if(enem_dir[2]==1)
+          {
+            console.log("ff");
+            opp3.position.x+=enem_speed;
+            if (opp3.position.x+enem_speed >= 20) 
+              {enem_dir[2]*=-1;}
+          }
+          else
+          {
+            opp3.position.x-=enem_speed;
+            if (opp3.position.x-enem_speed <= -20) 
+              {enem_dir[2]*=-1;}
+
+
+
+
+          }
+
+
+
+        for(var i=0;i<star_arr.length;i++)
+        {
+          star_arr[i].rotation.y+=1;
+        }
+
+
+       
+                      for(var index=0;index<bullets.length;index+=1)
+                      {
+                        if(bullets[index]==undefined)
+                          {continue;}
+                        if(bullets[index].alive==false){
+                          bullets.splice(index,1);
+                          continue;
+                        }
+                        bullets[index].position.add(bullets[index].velocity);
+                      }
+
+
+                      var moveDistance=2;
+
+                      if (keyboard.pressed("left") || keyboard.pressed("A")) {
+                      if (cube.position.x > -270)
+                          cube.position.x -= moveDistance;
+                      if (camera.position.x > -150) {
+                          camera.position.x -= moveDistance * 0.6;
+                          
+                      }
+                  }
+                  if (keyboard.pressed("right") || keyboard.pressed("D")) {
+                      if (cube.position.x < 270)
+                          cube.position.x += moveDistance;
+                      if (camera.position.x < 150) {
+                          camera.position.x += moveDistance * 0.6;
+                      }
+                  }
+                  if (keyboard.pressed("up") || keyboard.pressed("W")) {
+                      cube.position.y += moveDistance;
+                      camera.position.y+=0.95*moveDistance;
+                  }
+                  if (keyboard.pressed("down") || keyboard.pressed("S")) {
+                      cube.position.y -= moveDistance;
+                      camera.position.y-=0.95*moveDistance;
+                  }
+
+
+                  if(keyboard.pressed("space")){
+                    var bullet= new THREE.Mesh(
+                        new THREE.SphereGeometry(0.5,8,8),
+                        new THREE.MeshBasicMaterial({color: 0xff0000})
+                      );
+                    bullet.position.set(
+                      cube.position.x,
+                      cube.position.y,
+                      cube.position.z
+
+                      );
+                    bullet.velocity=new THREE.Vector3(
+                      0,2,0
+                      )
+                    bullet.alive=true;
+                    // setTimeOut(function(){
+                    //     bullet.alive=false;
+                    //     scene.remove(bullet);
+                    // },1000);
+
+                    bullets.push(bullet);
+                    scene.add(bullet);
+                  }
+
+
+
+
+    
+  
+
+
+
+    for (let i = 0; i < bullets.length; i++) {
+            const bullet = bullets[i];
+        
+          
+
+            // collision checks
+            
+                if (bullet.position.x+2.5 <= opp1.position.x+1.5 &&  bullet.position.x+2.5 >= opp1.position.x-1.5 &&
+                    bullet.position.y <= opp1.position.y+1 && bullet.position.y >= bullet.position.y-1 ) 
+                {
+                    score += 30;
+                    bullet.scale.set(0,0);
+                    bullets.splice(i,1);
+                    
+                    opp1.scale.set(0,0);
+                    opp1.position.set(-100,-100,-100);
+                }
+                else if (bullet.position.x+2.5 <= opp2.position.x+1.5 &&  bullet.position.x+2.5 >= opp2.position.x-1.5 &&
+                    bullet.position.y <= opp2.position.y+1 && bullet.position.y >= opp2.position.y-1 ) {
+                    score += 10;
+                    bullet.scale.set(0,0);
+                    bullets.splice(i,1);
+                    
+                    opp2.scale.set(0,0);
+                    opp2.position.set(-100,-100,-100);
+                }
+                else if (bullet.position.x+2.5 <= opp3.position.x+1.5 &&  bullet.position.x+2.5 >= opp3.position.x-1.5 &&
+                    bullet.position.y <= opp3.position.y+1 && bullet.position.y >= opp3.position.y-1 ) {
+                    score += 10;
+                    bullet.scale.set(0,0);
+                    bullets.splice(i,1);
+                    
+                    opp3.scale.set(0,0);
+                    opp3.position.set(-100,-100,-100);
+                    
+                }
+            
+        }
+
+        // enemy missile counter
+        enemy_missile_timer++;
+        if (enemy_missile_timer >= max_enemy_shoot_time) {
+            enemy_missile_timer = 0;
+
+            var missileGeometry = new THREE.SphereGeometry(.2, .8, .6);
+            var wireMaterial = new THREE.MeshBasicMaterial({
+                color: 0xed1c24,
+            });
+            var missile = new THREE.Mesh(missileGeometry, wireMaterial);
+            missile.position.set(opp1.position.x-2,opp1.position.y,0);
+            scene.add(missile);
+            enem_miss.push(missile);
+        }
+
+        // updating enemy missile positions
+        for (let i = 0; i < enem_miss.length; i++) {
+            const miss = enem_miss[i];
+            miss.position.y -= 2;
+            if (miss.position.y <= -25) {
+                miss.scale.set(0,0,0);
+                enem_miss.splice(i,1);
+            }
+
+            // collision check
+            else {
+                // decrease health
+                if (miss.position.x <= cube.position.x+1.5 &&  miss.position.x >= cube.position.x-1.5 &&
+                    miss.position.y <= cube.position.y+1 && miss.position.y >= cube.position.y-1 ) 
+                {
+                    point-=1;
+                    miss.scale.set(0,0);
+                    miss.position.set(-100,-100,-100);
+                    enem_miss.splice(i,1);
+                }
+            }
+        }
+
+        // coins collision
+        for (let i = 0; i < star_arr.length; i++) {
+            const star = star_arr[i];
+            console.log("prints");
+            if(star.position.x <= cube.position.x+1.5 &&  star.position.x >= cube.position.x-1.5 &&
+        star.position.y <= cube.position.y+0.9 && star.position.y >= cube.position.y-0.9 ){
+                score+=5;
+                star.scale.set(0,0,0);
+                star_arr.splice(i,1);
+            }
+            else{
+                star.rotation.y+=0.1;
+            }
+        }
+    
+
+
+
+
+
+                  
+           scoreText.innerText = "Score:" + Math.floor(score);
+           pointsText.innerText= "Points:"+ Math.floor(point);
+   }
+   function getRandomArbitrary(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+  function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+   function makeRandomCube() {
+    var a = 1;
+    var b = 1;
+     var  c = 1;
+    var geometry = new THREE.BoxGeometry(a, b, c);
+    var material = new THREE.MeshBasicMaterial({
+        color: Math.random() * 0xffffff
+    });
+
+
+    var object = new THREE.Mesh(geometry, material);
+    object.position.x = getRandomArbitrary(-15, 15);
+    object.position.y = getRandomArbitrary(cube.position.y+5,100);
+    object.position.z = cube.position.z;
+    var box = new THREE.BoxHelper(object);
+    //            box.material.color.setHex(Math.random() * 0xffffff);
+    box.material.color.setHex(0xff0000);
+
+    box.position.x = getRandomArbitrary(-1000, 1000);
+    box.position.y = getRandomArbitrary(-1000,1000);
+    box.position.z = getRandomArbitrary(-800, -1200);
+    cubes.push(object);
+    box.name = "box_" + id;
+    id++;
+    collideMeshList.push(box);
+
+    scene.add(box);
+}
+
+function makeStars() {
+    var x = getRandomArbitrary(-70,70);
+    var y = getRandomArbitrary(0,80);
+
+    var coinGeometry = new THREE.TorusGeometry(0.6, 0.4, 3.2, 20.0);
+  var material = new THREE.MeshStandardMaterial({
+        color: 0xffff00,
+        wireframe: true,
+        wireframeLinewidth: 2
+    });
+    
+    var star = new THREE.Mesh(coinGeometry, material);
+    star.position.set(x,y,cube.position.z);
+    star.rotation.x = 1;
+    scene.add(star);
+    star_arr.push(star);
+}
+</script>
+</body>
+</html>
